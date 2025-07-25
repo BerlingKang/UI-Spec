@@ -1,25 +1,31 @@
-import logo from './logo.svg';
-import './App.css';
+import { ComponentTreeProvider } from "./ComponentContext";
+import { ComponentWrapper } from "./ComponentWrapper";
+import { Sidebar } from "./Sidebar";
+import { Box, Button, Typography } from "@mui/material";
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      <ComponentTreeProvider>
+        <Box sx={{ display: "flex" }}>
+          <Box sx={{ width: 300, borderRight: "1px solid #ccc", p: 2 }}>
+            <Sidebar />
+          </Box>
+          <Box sx={{ flexGrow: 1, p: 4 }}>
+            <ComponentWrapper id="1" type="Button" props={{ label: "Click Me" }}>
+              <Button variant="contained">Click Me</Button>
+            </ComponentWrapper>
+
+            <ComponentWrapper id="2" type="Typography" props={{ text: "Hello World" }}>
+              <Typography variant="h5">Hello World</Typography>
+            </ComponentWrapper>
+
+            <ComponentWrapper id="3" type="Nested" props={{}}>
+              <ComponentWrapper id="3.1" type="Typography" props={{ text: "Nested" }}>
+                <Typography variant="body1">Nested Text</Typography>
+              </ComponentWrapper>
+            </ComponentWrapper>
+          </Box>
+        </Box>
+      </ComponentTreeProvider>
   );
 }
-
-export default App;

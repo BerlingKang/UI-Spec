@@ -1,0 +1,31 @@
+import axios from 'axios';
+
+const apiClient = axios.create({
+    baseURL: 'http://118.31.58.101:45500/',
+    headers: { "Content-Type": "application/json" },
+    method: "POST"
+})
+
+export const combineSpec = (body) => {
+    return apiClient.post('/api/combine_spec', body);
+}
+
+export const generateCode = (body) => {
+    return apiClient.post('/api/generate_code', body);
+}
+
+export const imageToSpec = (body) => {
+    return apiClient.post('api/image_to_spec', body);
+}
+
+export const editSpec = (body) => {
+    return apiClient.post('api/edit_spec', body);
+}
+
+export const text_to_spec = (body) =>{
+    return apiClient.post('api/text_to_spec');
+}
+
+export const image_reference = (body) =>{
+    return apiClient.post('api/image_reference');
+}
