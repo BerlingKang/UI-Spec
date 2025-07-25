@@ -22,10 +22,10 @@ export const editSpec = (body) => {
     return apiClient.post('api/edit_spec', body);
 }
 
-export const text_to_spec = (body) =>{
+export const textToSpec = (body) =>{
     return apiClient.post('api/text_to_spec');
 }
 
-export const image_reference = (body) =>{
+export const imageReference = (body) =>{
     return apiClient.post('api/image_reference');
 }

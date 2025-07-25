@@ -1,24 +1,16 @@
 import React, { useState } from "react";
-import {Box, ListItemButton, List, Typography, Tab, Tabs} from "@mui/material";  // 推荐使用 MUI 布局组件，纯 CSS 也可
+import {Box, Typography, Tab, Tabs} from "@mui/material";  // 推荐使用 MUI 布局组件，纯 CSS 也可
 import { testString2 as input_text, response as input_response, code_response as input_code, code_1, code_2, spec_1} from "./Parameters";
-import { combineSpec, generateCode, imageToSpec, editSpec } from "./APIsolver";
-import CodeBar from "./CodePane";
+import { combineSpec, generateCode, imageToSpec, editSpec, textToSpec, imageReference } from "./APIsolver";
 
+import CodeBar from "./CodePane";
 import UploadBar from "./UploadBar";
 import SpecTree from "./SpecTree";
 import DetailPane from "./DetailPane";
-import DynamicRenderer from "../Version1/CodePane";
 import ReferencePane from "./ReferencePane";
 
 
-
 const MainPane = () => {
-    const [paneStatus, setPaneStatus] = useState("edit"); // 面盘控制
-    const [selectedComponent, setSelectedComponent] = useState(null);
-    const [post, setPost] = useState([]);
-    const [code, setCode] = useState("");
-    const [renderImage, setRenderImage] = useState(null);
-    const [selectedElement, setSelectedElement] = useState(null);
     const [codeList, setCodeList] = useState([]);
     const [value, setValue] = useState(0);
 
@@ -26,8 +18,14 @@ const MainPane = () => {
         setValue(newValue);
     };
 
-    let indicater = 1;
 
+
+    /**
+     * 通过Spec树生成代码的方法
+     * @param body
+     * @returns {Promise<void>}
+     */
+    let indicater = 1;
     const generateCode = async (body) => {
         try{
             console.log("start generating")
@@ -40,7 +38,6 @@ const MainPane = () => {
                 response = code_2
             }
             console.log("Using the generating API:", response);
-            setCode(response.data.code);
             setCodeList((prev) => [...prev, response.data.code]);
             indicater = indicater + 1 // TODO: 这个地方是例子，记得改回去用API的
         } catch (err) {
@@ -48,7 +45,82 @@ const MainPane = () => {
         }
     }
 
-    const CurrentUI = () =>{
+    /**
+     * 通过文本生成spec界面的方法
+     * @param body
+     * @returns {Promise<void>}
+     */
+    const text_to_spec = async (body) =>{
+        try{
+            console.log("start generating");
+            const response = await textToSpec(body);
+            console.log("Getting response:", response);
+        } catch (err){
+            console.log(err);
+        }
+    }
+
+    /**
+     * 通过上传局部图片来实现生成局部spec的方法
+     * @param body
+     * @returns {Promise<void>}
+     */
+    const image_reference = async (body) =>{
+        try {
+            console.log("start posting");
+            const response = await imageReference(body);
+            console.log("Getting response:", response)
+        }catch (err){
+            console.log(err)
+        }
+    }
+
+    /**
+     * 通过图片获取spec的方法
+     * @param body
+     * @returns {Promise<void>}
+     */
+    const image_to_spec = async (body) =>{
+        try {
+            console.log("start posting");
+            const response = await imageToSpec(body);
+            console.log("Getting response:", response)
+        }catch (err){
+            console.log(err)
+        }
+    }
+
+    /**
+     * 组合spec获取新的spec的方法
+     * @param body
+     * @returns {Promise<void>}
+     */
+    const combine_spec = async (body) =>{
+        try {
+            console.log("start posting");
+            const response = await combineSpec(body);
+            console.log("Getting response:", response)
+        }catch (err){
+            console.log(err)
+        }
+    }
+
+    /**
+     * 编辑spec的方法
+     * @param body
+     * @returns {Promise<void>}
+     */
+    const edit_spec = async (body) =>{
+        try {
+            console.log("start posting");
+            const response = await editSpec(body);
+            console.log("Getting response:", response)
+        }catch (err){
+            console.log(err)
+        }
+    }
+
+    const EditUI = () =>{
         return(
             <Box
                 sx={{
@@ -82,7 +154,7 @@ const MainPane = () => {
                     >
 
                         <Typography sx={{fontSize: '24px'}}>
-                            Current UI
+                            Edit UI
                         </Typography>
 
                         <Box sx={{
@@ -148,7 +220,7 @@ const MainPane = () => {
         )
     }
 
-    const ReferenceUI = () =>{
+    const GenerateUI = () =>{
         return(
             <Box
                 sx={{
@@ -182,7 +254,7 @@ const MainPane = () => {
                     >
 
                         <Typography sx={{fontSize: '24px'}}>
-                            Reference UI
+                            GenerateUI
                         </Typography>
 
                         <Box
@@ -279,8 +351,8 @@ const MainPane = () => {
                             },
                         }}
                     >
-                        <Tab label="Current UI" />
-                        <Tab label="Reference UI" />
+                        <Tab label="Edit UI" />
+                        <Tab label="Generate UI" />
                     </Tabs>
                     <Box sx={{
                         display:'flex',
@@ -291,8 +363,8 @@ const MainPane = () => {
                         maxWidth:'100%',
                         maxHeight:'90%',
                     }}>
-                        {value === 0 && <CurrentUI />}
-                        {value === 1 && <ReferenceUI />}
+                        {value === 0 && <EditUI />}
+                        {value === 1 && <GenerateUI />}
                     </Box>
 
                 </Box>
