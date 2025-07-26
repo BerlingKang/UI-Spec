@@ -84,9 +84,10 @@ const MainPane = () => {
         try {
             console.log("start posting");
             const response = await imageToSpec(body);
-            console.log("Getting response:", response)
+            console.log("Getting response:", response);
+            return response;
         }catch (err){
-            console.log(err)
+            console.log(err);
         }
     }
 
@@ -209,7 +210,7 @@ const MainPane = () => {
                         <Box sx={{
                             mt: "auto", maxWidth:'100%'
                         }}>
-                            <UploadBar />
+                            <UploadBar image_to_spec={image_to_spec}/>
                         </Box>
                     </Box>
                 </Box>

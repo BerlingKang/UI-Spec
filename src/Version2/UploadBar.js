@@ -2,23 +2,18 @@ import React, { useState } from "react";
 import {
     Box,
     Button,
-    Collapse,
-    List,
-    ListItemButton,
-    ListItemText,
-    Typography,
     IconButton,
-    Paper,
     TextField,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
+import {input_string} from "../Version1/Parameters";
 
-const UploadBar = () => {
+const UploadBar = (image_to_spec) => {
     const [images, setImages] = useState([]);
     const [value, setValue] = useState('');
     const defaultText = '-Input text and/or upload reference images to edit your SPEC\n-For partial reference, upload the relevant section instead of the full page';
-
+    const [specList, setSpecList] = useState([]);
     const displayValue = value === '' ? defaultText : value;
 
     const handleImageUpload = (event) => {
@@ -28,6 +23,39 @@ const UploadBar = () => {
             id: Date.now() + Math.random(),
         }));
         setImages((prev) => [...prev, ...newImages]);
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result.split(",")[1];
+
+            const payload = {
+                image: base64String,
+                save_name: "my_image_spec",
+            };
+            try {
+                const response = await image_to_spec(JSON.stringify(payload))
+
+                const rawString = response.data.spec; // 是带有 ```json 的字符串
+                console.log(rawString);
+                //
+                // // 提取 ```json ... ``` 中的内容
+                // const regex = /```json\s*([\s\S]*?)\s*```/;
+                // const match = rawString.match(regex);
+                //
+                // if (!match || !match[1]) {
+                //     throw new Error("未匹配到 JSON 数据块");
+                // }
+                //
+                // const jsonString = match[1].trim(); // ⚠️ 去除开头结尾的空格与换行
+                //
+                // const dataObject = JSON.parse(rawString); // ✅ 成功解析
+                console.log("最终 JSON 对象:", rawString);
+
+                setSpecList((prev) => [...prev, rawString])
+            } catch (err) {
+                console.error(err)
+            }
+        };
     };
 
     const handleRemoveImage = (idToRemove) => {
