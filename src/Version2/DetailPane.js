@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
-import {Box, Tabs, Tab, Typography, RadioGroup, FormControlLabel, Radio, Switch, TextField} from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import {Box, Tabs, Tab, Typography, FormControlLabel, Switch, TextField, Button} from '@mui/material';
 
-const DetailPane = () =>{
+import { ReactComponent as FunctionIcon } from './icon/function_label.svg';
+import { ReactComponent as InfoIcon } from './icon/displayedInformation.svg';
+import { ReactComponent as StyleIcon } from './icon/colorStyleAndLayout.svg';
+import { ReactComponent as PositionIcon } from './icon/position.svg';
+import { ReactComponent as LayoutIcon } from './icon/layout.svg';
+
+const DetailPane = ({ selectedComponent, selectedSpecData, edit_spec }) => {
     const [switchStates, setSwitchStates] = useState({
         function: true,
         info: true,
@@ -10,6 +16,46 @@ const DetailPane = () =>{
         layout: true,
     });
 
+    const applyChange = () => {
+        const keyMap = {
+            function: '承担的功能',
+            info: '承载的信息',
+            style: '组件的配色样式',
+            position: '所处的位置',
+            layout: '组件内的布局样式'
+        };
+
+        let result = "请针对我提供的spec对以下内容进行修改：";
+
+        Object.entries(switchStates).forEach(([key, isEnabled]) => {
+            if (isEnabled) {
+                const specKey = keyMap[key];
+                const value = selectedSpecData?.[specKey];
+                if (value) {
+                    result += `将${specKey}改为：${value}\n`;
+                }
+            }
+        });
+
+        console.log('✔️ 应用的规格内容：\n' + result);
+
+        applySpecEdit(result)
+
+    };
+
+    const applySpecEdit = async (text) => {
+        try {
+            const payload = {
+                spec: selectedComponent,
+                text: text,
+                save_name: "edit_spec_01",
+            }
+            console.log("start editing spec from detailpane:", JSON.stringify(payload))
+            await edit_spec(JSON.stringify(payload));
+        }catch (err) {
+                console.log(err)
+            }
+    }
 
     const handleToggle = (key) => (event) => {
         setSwitchStates((prev) => ({
@@ -18,231 +64,52 @@ const DetailPane = () =>{
         }));
     };
 
+    const getFieldValue = (source, key) => {
+        if (!source) return '';
+        return source[key] || '';
+    };
 
-    const CurrentUI = () => (
-        <Box sx={{
-            height:"90%",
-            overflow: 'auto'
-        }}>
-            <Box sx={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'column',
-                p: 1,
-                mt: 1,
-            }}>
+    const renderBox = (label, IconComponent, switchKey, componentKey, specKey) => (
+        <Box sx={{ display: 'flex', flex: 1, flexDirection: 'column', p: 1, mt: 1 }}>
+            <Box sx={{ display: 'flex', flex: 1, flexDirection: 'row', gap:1}}>
                 <FormControlLabel
+
+                    labelPlacement="start"
                     control={
                         <Switch
-                            checked={switchStates.function}
-                            onChange={handleToggle("function")}
+                            checked={switchStates[switchKey]}
+                            onChange={handleToggle(switchKey)}
                             color="primary"
                         />
                     }
-                    label={"Function"}
+                    label=""
                 />
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                        style: {color: "blue"}
-                    }}
-                    defaultValue="Displays product name and brand identity"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                    }}
-                    defaultValue="Displays product name and brand identity"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <Typography>{label}</Typography>
+                    <IconComponent width={20} height={20} />
+                </Box>
             </Box>
 
-            <Box sx={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'column',
-                p: 1,
-                mt: 1,
-            }}>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={switchStates.info}
-                            onChange={handleToggle("info")}
-                            color="primary"
-                        />
-                    }
-                    label={"Displayed Information"}
-                />
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                        style: {color: "blue"}
-                    }}
-                    defaultValue="Text logo of iMaster NCE"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                    }}
-                    defaultValue="Text logo of Dashboard"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-            </Box>
-
-            <Box sx={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'column',
-                p: 1,
-                mt: 1,
-            }}>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={switchStates.style}
-                            onChange={handleToggle("style")}
-                            color="primary"
-                        />
-                    }
-                    label={"Color Style & Layout"}
-                />
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                        style: {color: "blue"}
-                    }}
-                    defaultValue="Dark gray text, left-ailgned, 24px, left margin"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                    }}
-                    defaultValue="White text, left-aligned, 24px left margin"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-            </Box>
-
-            <Box sx={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'column',
-                p: 1,
-                mt: 1,
-            }}>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={switchStates.position}
-                            onChange={handleToggle("position")}
-                            color="primary"
-                        />
-                    }
-                    label={"Position"}
-                />
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                        style: {color: "blue"}
-                    }}
-                    defaultValue="Top left of the page"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                    }}
-                    defaultValue="Top left of the page"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-            </Box>
-
-            <Box sx={{
-                display: 'flex',
-                flex: 1,
-                flexDirection: 'column',
-                p: 1,
-                mt: 1,
-            }}>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={switchStates.layout}
-                            onChange={handleToggle("layout")}
-                            color="primary"
-                        />
-                    }
-                    label={"Layout Style"}
-                />
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                        style: {color: "blue"}
-                    }}
-                    defaultValue="Horizontally centered"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-
-                <TextField
-                    InputProps={{
-                        readOnly: true,
-                    }}
-                    defaultValue="Align left"
-                    sx={{
-                        backgroundColor: "#f1f2f7"
-                    }}
-                    multiline
-                />
-            </Box>
+            <TextField
+                InputProps={{ readOnly: true, style: { color: 'blue' } }}
+                value={getFieldValue(selectedComponent, componentKey)}
+                sx={{ backgroundColor: '#f1f2f7', mt: 1 }}
+                multiline
+            />
+            <TextField
+                InputProps={{ readOnly: false }}
+                value={getFieldValue(selectedSpecData, specKey)}
+                sx={{ backgroundColor: '#f1f2f7', mt: 1 }}
+                multiline
+            />
         </Box>
     );
 
     const [activeTab, setActiveTab] = useState(0);
-
-    const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
-    };
+    const handleTabChange = (event, newValue) => setActiveTab(newValue);
 
     return (
-        <Box sx={{
-            width: '100%',
-            height: '100%'
-        }}>
-            {/* 顶部 Tabs */}
+        <Box sx={{ width: '100%', height: '100%' }}>
             <Tabs
                 value={activeTab}
                 onChange={handleTabChange}
@@ -263,9 +130,18 @@ const DetailPane = () =>{
             >
                 <Tab label="Attributes" />
             </Tabs>
-            <CurrentUI />
+            <Box sx={{ height: '90%', overflow: 'auto' }}>
+                {renderBox('Function', FunctionIcon, 'function', '承担的功能', '承担的功能')}
+                {renderBox('Displayed Information', InfoIcon, 'info', '承载的信息', '承载的信息')}
+                {renderBox('Color Style & Layout', StyleIcon, 'style', '组件的配色样式', '组件的配色样式')}
+                {renderBox('Position', PositionIcon, 'position', '所处的位置', '所处的位置')}
+                {renderBox('Layout Style', LayoutIcon, 'layout', '组件内的布局样式', '组件内的布局样式')}
+            </Box>
+            <Box>
+                <Button fullWidth variant="contained" onClick={applyChange} sx={{ p: 2 }}>Apply</Button>
+            </Box>
         </Box>
     );
-}
+};
 
 export default DetailPane;

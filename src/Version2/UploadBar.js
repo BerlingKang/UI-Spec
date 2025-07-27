@@ -7,87 +7,97 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
-import {input_string} from "../Version1/Parameters";
+import { reference_example } from './Parameters'
 
-const UploadBar = ({image_to_spec, edit_spec, data}) => {
+const UploadBar = ({ image_reference, edit_spec, data, selectSpec }) => {
     const [images, setImages] = useState([]);
     const [value, setValue] = useState('');
     const defaultText = '-Input text and/or upload reference images to edit your SPEC\n-For partial reference, upload the relevant section instead of the full page';
-    const [specList, setSpecList] = useState([]);
     const displayValue = value === '' ? defaultText : value;
+    const [imageCount, setImageCount] = useState(0);
 
-    const handleImageUpload = async (event) => {
-        const files = Array.from(event.target.files);
-
-        for (const file of files) {
-            const reader = new FileReader();
-
-            try {
-                reader.onload = async () => {
-                    const base64String = reader.result.split(',')[1]; // 去掉开头的 data:image/...;base64,
-
-                    const payload = {
-                        image: base64String,
-                        save_name: file.name,  // 或自定义一个唯一名字
-                        spec: "",              // 如有已有 spec 可传入；否则留空或删除该字段
-                    };
-                    const body = JSON.stringify(payload);
-                    // const response = await image_to_spec(body);
-
-                    const response = input_string;
-
-                    // const result = await response.json();
-
-                    const newImage = {
-                        url: URL.createObjectURL(file),
-                        id: Date.now() + Math.random(),
-                        // spec: result.spec,
-                    };
-                    setImages((prev) => [...prev, newImage]);
-                    setSpecList((prev) => [...prev, response])
-
-                };
-            } catch (err) {
-                alert("Handling pic fail")
-                console.log(err);
-            }
-
-            reader.readAsDataURL(file);  // 将文件读成 base64
+    const get_reference = async (pureBase64) => {
+        const payload = {
+            image: pureBase64, // ✅ 不含前缀
+            save_name: "reference_01",
+            spec: "",
+        };
+        try {
+            console.log("using this json as a payload", JSON.stringify(payload));
+            // const response = await image_reference(payload);
+            let response = reference_example
+            console.log("get response spec as:", response);
+            return response.data.attributes;
+        } catch (err) {
+            console.log("error occur when referencing", err);
         }
     };
 
 
-    const handleRemoveImage = (idToRemove) => {
-        setImages((prev) => prev.filter((img) => img.id !== idToRemove));
+    // 将 File 转为 Base64
+    const fileToBase64 = (file, index) =>
+        new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const extension = file.name.split('.').pop();
+                const newName = `image_${imageCount + index + 1}.${extension}`;
+                const spec = await get_reference(reader.result);   // ✅ 正确传参
 
+                resolve({
+                    base64: reader.result,
+                    name: newName,
+                    spec: spec,
+                    url: URL.createObjectURL(file),
+                    id: `${Date.now()}-${Math.random()}`
+                });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
+
+
+
+    // 上传并处理图片
+    const handleImageUpload = async (event) => {
+        const files = Array.from(event.target.files);
+
+        const base64Images = await Promise.all(
+            files.map((file, index) => fileToBase64(file, index))
+        );
+
+        setImages((prev) => [...prev, ...base64Images]);
+        setImageCount((prev) => prev + files.length);
     };
 
-    const confirmEditSpec = async (e) => {
+    const handleRemoveImage = (idToRemove) => {
+        setImages((prev) => prev.filter((img) => img.id !== idToRemove));
+    };
+
+    const confirmEditSpec = async () => {
         const payload = {
             save_name: "edit_spec_01",
             text: value,
             spec: data,
-        }
-        try{
-            console.log("spec before editing", data)
+        };
+        try {
+            console.log("spec before editing", data);
             const response = await edit_spec(JSON.stringify(payload));
-            console.log("spec before editing", response.data.spec);
+            console.log("spec after editing", response?.data?.spec);
         } catch (err) {
             console.log("error when editing spec", err);
         }
-    }
+    };
 
     return (
         <Box sx={{
             mt: 1,
             display: "flex",
             flexDirection: "column",
-            p:3,
+            p: 3,
             gap: 2,
             backgroundColor: "#fdfdfe"
         }}>
-
-
             {/* 图片展示区域 */}
             <Box
                 sx={{
@@ -119,7 +129,10 @@ const UploadBar = ({image_to_spec, edit_spec, data}) => {
                                 height: "100%",
                                 borderRadius: 2,
                                 boxShadow: 1,
+                                cursor: "pointer",
                             }}
+                            onClick={() =>{console.log(img.spec)
+                                selectSpec(img.spec)}}
                         />
                         <IconButton
                             size="small"
@@ -141,46 +154,41 @@ const UploadBar = ({image_to_spec, edit_spec, data}) => {
                 ))}
             </Box>
 
-            <Box>
-                <TextField
-                    multiline
-                    minRows={3}
-                    sx={{
-                       backgroundColor: "#f1f2f7",
-                       display: "flex",
-                       flex: 1,
-                       mt: 2,
-                       gap: 2,
-                       "& .MuiInputBase-root": {
-                           resize: "vertical",
-                           overflow: "auto",
-                       },
-                    }}>
-                    label="请输入内容"
-                    variant="outlined"
-                    size="small"
-                    value={displayValue}
-                    onChange={(e) => setValue(e.target.value)}
-                    onFocus={(e) => {
-                    // 如果是默认文字，清空
-                    if (value === '') setValue('');
-                }}
-                    inputProps={{
-                    style: {
-                        color: value === '' ? '#aaa' : '#000', // 默认提示是灰色
+            {/* 文本输入框 */}
+            <TextField
+                multiline
+                minRows={3}
+                label="请输入内容"
+                variant="outlined"
+                size="small"
+                fullWidth
+                sx={{
+                    backgroundColor: "#f1f2f7",
+                    mt: 2,
+                    "& .MuiInputBase-root": {
+                        resize: "vertical",
+                        overflow: "auto",
                     },
                 }}
-                </TextField>
-            </Box>
+                value={displayValue}
+                onChange={(e) => setValue(e.target.value)}
+                onFocus={() => {
+                    if (value === '') setValue('');
+                }}
+                inputProps={{
+                    style: {
+                        color: value === '' ? '#aaa' : '#000',
+                    },
+                }}
+            />
 
-
-            {/* 圆形上传按钮 */}
+            {/* 按钮区域 */}
             <Box sx={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 px: 2,
-                gap:2,
+                gap: 2,
             }}>
                 <IconButton
                     component="label"
@@ -199,12 +207,12 @@ const UploadBar = ({image_to_spec, edit_spec, data}) => {
                     <input
                         type="file"
                         accept="image/*"
-                        multiple
+                        multiple={false}  // ✅ 仅允许一张
                         hidden
                         onChange={handleImageUpload}
                     />
                 </IconButton>
-                <Button variant="contained" component="label" onClick={confirmEditSpec}>
+                <Button variant="contained" onClick={confirmEditSpec}>
                     Confirm Edit
                 </Button>
             </Box>

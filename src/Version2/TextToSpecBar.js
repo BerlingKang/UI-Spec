@@ -6,7 +6,7 @@ import {
     TextField,
 } from "@mui/material";
 import {input_string} from "../Version1/Parameters";
-import {spec_1} from "./Parameters";
+import {root_spec, spec_1} from "./Parameters";
 
 const TextToSpecBar = ({text_to_spec, setTextToSpec}) => {
     const [value, setValue] = useState('');
@@ -22,7 +22,7 @@ const TextToSpecBar = ({text_to_spec, setTextToSpec}) => {
             let response = text_to_spec(payload);
             console.log("getting responsing spec:",response)
             // setTextToSpec(response.data.spec)
-            setTextToSpec(spec_1)
+            setTextToSpec(root_spec)
         } catch (err) {
             console.log(err)
         }

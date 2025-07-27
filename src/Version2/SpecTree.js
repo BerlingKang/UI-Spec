@@ -1,83 +1,91 @@
-// SpecTreeWithDnD.js
 import React, { useState, useEffect } from 'react';
 import {
     Box,
     List,
     Button,
     ListItemButton,
+    ListItemIcon,
     ListItemText,
     Collapse,
     Typography,
+    Divider,
 } from '@mui/material';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useDrag, useDrop, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import {generateCode as createCode} from './APIsolver';
-import {code_1} from './Parameters';
+
+// SVG 图标导入
+import { ReactComponent as IconRoot } from './icon/Vector.svg';
+import { ReactComponent as IconRegion } from './icon/layout-list.svg';
+import { ReactComponent as IconFeature } from './icon/ordered-list.svg';
 
 const ITEM_TYPE = 'COMPONENT';
 
-function assignIds(data) {
-    if (!data || !Array.isArray(data.components)) return { components: [] };
-    let idCounter = 1;
-    const assign = (node) => {
-        node.id = node.id || `comp-${idCounter++}`;
-        if (node.children) node.children.forEach(assign);
-    };
-    data.components.forEach(assign);
-    return data;
+/**
+ * 转换原始 JSON 为树结构，附带原始数据 raw
+ */
+function transformData(rawData) {
+    const regions = rawData?.['页面构成']?.['区域划分'];
+    if (!Array.isArray(regions)) return { components: [], raw: rawData };
+
+    const components = regions.map(region => {
+        const regionName = region['区域名称'] || 'Unnamed Region';
+        const children = Array.isArray(region['包含组件'])
+            ? region['包含组件'].map(item => ({
+                text: { main: item['承担的功能'] || 'Unnamed Function' },
+                raw: item,
+            }))
+            : [];
+        return {
+            text: { main: regionName },
+            children,
+            raw: region,
+        };
+    });
+
+    return { components, raw: rawData };
 }
 
-const RecursiveComponent = ({ component, index, level = 1, moveComponent }) => {
+const RecursiveComponent = ({ component, index, level = 1, moveComponent, selectedId, onSelect }) => {
     const [open, setOpen] = useState(false);
     const hasChildren = Array.isArray(component.children) && component.children.length > 0;
-
     const [{ isDragging }, dragRef] = useDrag({
         type: ITEM_TYPE,
         item: { id: component.id },
         collect: monitor => ({ isDragging: monitor.isDragging() }),
     });
+    const [, dropRef] = useDrop({ accept: ITEM_TYPE, drop: item => item.id !== component.id && moveComponent(item.id, component.id) });
 
-    const [, dropRef] = useDrop({
-        accept: ITEM_TYPE,
-        drop: item => {
-            if (item.id !== component.id) moveComponent(item.id, component.id);
-        },
-    });
-
-    const getComponentName = (component, index) => {
-        if (component.type && component.content) {
-            return `${component.type}: ${component.content}`;
-        }
-        const text = component.text || {};
-        if (text.main && text.sub) return `${text.main}: ${text.sub}`;
-        if (text.main) return text.main;
-        if (text.activeItem) return `Active: ${text.activeItem}`;
-        if (text.placeholder) return `Placeholder: ${text.placeholder}`;
-        return `Component ${index + 1}`;
-    };
+    const getComponentName = () => component.text?.main || `Component ${index + 1}`;
+    const renderIcon = () => (level === 1 ? <IconRegion width={20} height={20} /> : <IconFeature width={16} height={16} />);
 
     return (
         <>
             <ListItemButton
                 ref={node => dragRef(dropRef(node))}
+                selected={component.id === selectedId}
                 sx={{ pl: 2 + level * 2, opacity: isDragging ? 0.5 : 1 }}
-                onClick={() => setOpen(prev => !prev)}
+                onClick={() => {
+                    setOpen(prev => !prev);
+                    onSelect(component);
+                }}
             >
-                <ListItemText primary={getComponentName(component, index)} />
-                {hasChildren ? (open ? <ExpandLess /> : <ExpandMore />) : null}
+                <ListItemIcon>{renderIcon()}</ListItemIcon>
+                <ListItemText primary={getComponentName()} />
+                {hasChildren && (open ? <ExpandLess /> : <ExpandMore />)}
             </ListItemButton>
-
             {hasChildren && (
                 <Collapse in={open} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                         {component.children.map((child, idx) => (
                             <RecursiveComponent
-                                key={child.id}
+                                key={child.id || idx}
                                 component={child}
                                 index={idx}
                                 level={level + 1}
                                 moveComponent={moveComponent}
+                                selectedId={selectedId}
+                                onSelect={onSelect}
                             />
                         ))}
                     </List>
@@ -87,122 +95,131 @@ const RecursiveComponent = ({ component, index, level = 1, moveComponent }) => {
     );
 };
 
-const SpecTree = ({ data, generateCode, spec_console }) => {
-    const [treeData, setTreeData] = useState(assignIds(JSON.parse(JSON.stringify(data))));
-    const [open, setOpen] = useState(true);
+const SpecTree = ({ data = {}, generateCode, spec_console, setSelectedComponent }) => {
+    const [selectedId, setSelectedId] = useState(null);
+    const [selectedNode, setSelectedNode] = useState(null);
+    const [treeData, setTreeData] = useState({ components: [], raw: null });
+
+    // 赋予节点唯一 ID
+    const assignIds = raw => {
+        if (!raw?.components) return { components: [], raw: raw.raw };
+        let idCounter = 1;
+        const assign = node => {
+            node.id = node.id || `comp-${idCounter++}`;
+            if (node.children) node.children.forEach(assign);
+        };
+        raw.components.forEach(assign);
+        return raw;
+    };
 
     useEffect(() => {
-        setTreeData(assignIds(JSON.parse(JSON.stringify(data))));
+        if (!data || Object.keys(data).length === 0) {
+            setTreeData({ components: [], raw: null });
+            return;
+        }
+        const transformed = transformData(data);
+        setTreeData(assignIds(transformed));
     }, [data]);
 
+    // 点击节点
+    const handleSelect = component => {
+        setSelectedId(component.id);
+        setSelectedNode(component.raw || component);
+        setSelectedComponent?.(component.raw || component);
+    };
+
+    // 点击根节点
+    const handleRootSelect = () => {
+        setSelectedId('root');
+        setSelectedNode(treeData.raw);
+        setSelectedComponent?.(treeData.raw);
+    };
+
+    const [open, setOpen] = useState(true);
     const handleToggle = () => setOpen(prev => !prev);
 
-    const generate_code = async (e) => {
-        const payload = {
-            save_name: "generate_code_1",
-            spec: treeData,
-        };
-        try{
-            const response = generateCode(JSON.stringify(payload));
-            console.log('this is data',response.data)
-        } catch (err) {
-            console.log(err)
+    // 根节点 Header
+    const RootHeader = () => (
+        <ListItemButton
+            selected={selectedId === 'root'}
+            onClick={() => {
+                handleToggle();
+                handleRootSelect();
+            }}
+            sx={{ cursor: 'pointer', userSelect: 'none' }}
+        >
+            <ListItemIcon><IconRoot width={24} height={24} /></ListItemIcon>
+            <ListItemText primary="页面构成" />
+            {open ? <ExpandLess /> : <ExpandMore />}
+        </ListItemButton>
+    );
+
+    const generate_code = async () => {
+        try {
+            const payload = { save_name: 'generate_code_1', spec: treeData };
+            const res = await generateCode(JSON.stringify(payload));
+            console.log(res.data);
+        } catch (e) {
+            console.error(e);
         }
-    }
+    };
+    const preview = () => spec_console(JSON.stringify({ save_name: 'generate_code_1', spec: treeData }));
 
     const moveComponent = (fromId, toId) => {
         const newData = JSON.parse(JSON.stringify(treeData));
-        let fromNode = null;
-
-        // 1. Remove from root level if matching
-        newData.components = newData.components.filter(child => {
-            if (child.id === fromId) {
-                fromNode = child;
-                return false;
-            }
+        let dragged = null;
+        const filterOut = nodes => nodes.filter(n => {
+            if (n.id === fromId) { dragged = n; return false; }
+            if (n.children) n.children = filterOut(n.children);
             return true;
         });
-
-        // 2. Remove from nested children
-        const removeRecursively = node => {
-            if (!node.children) return;
-            node.children = node.children.filter(child => {
-                if (child.id === fromId) {
-                    fromNode = child;
-                    return false;
-                }
-                removeRecursively(child);
-                return true;
-            });
-        };
-        newData.components.forEach(removeRecursively);
-
-        // If still not found, abort
-        if (!fromNode) return;
-
-        // 3. Insert under target node
-        const insertRecursively = node => {
-            if (node.id === toId) {
-                node.children = node.children || [];
-                node.children.push(fromNode);
-            } else if (node.children) {
-                node.children.forEach(insertRecursively);
-            }
-        };
-        newData.components.forEach(insertRecursively);
-
+        newData.components = filterOut(newData.components);
+        if (!dragged) return;
+        const insertInto = nodes => nodes.map(n => {
+            if (n.id === toId) n.children = [...(n.children||[]), dragged];
+            else if (n.children) insertInto(n.children);
+            return n;
+        });
+        newData.components = insertInto(newData.components);
         setTreeData(newData);
     };
 
-    const get_spec_console = async () => {
-        const payload = {
-            save_name: "generate_code_1",
-            spec: treeData,
-        };
-        console.log("get_spec_console step1")
-        spec_console(JSON.stringify(payload));
-    }
-
     return (
         <DndProvider backend={HTML5Backend}>
-            <Box sx={{ width: '100%', borderRight: '1px solid #ddd', p: 1, gap: 2, mt: 1 }}>
-                <Typography sx={{ fontSize: '24px' }}>Layers</Typography>
-                <Box sx={{ height: '5px', backgroundColor: '#c2c2c5', my: 2 }} />
+            <Box sx={{ display: 'flex', width: '100%', mt: 1 }}>
+                {/* 左侧树状列表 */}
+                <Box sx={{ width: '60%', borderRight: '1px solid #ddd', p: 1 }}>
+                    <Typography sx={{ fontSize: '24px' }}>Layers</Typography>
+                    <Box sx={{ height: '5px', backgroundColor: '#c2c2c5', my: 2 }} />
+                    <RootHeader />
+                    <Collapse in={open} timeout="auto" unmountOnExit>
+                        <List disablePadding>
+                            {treeData.components.map((comp, i) => (
+                                <RecursiveComponent
+                                    key={comp.id}
+                                    component={comp}
+                                    index={i}
+                                    level={1}
+                                    moveComponent={moveComponent}
+                                    selectedId={selectedId}
+                                    onSelect={handleSelect}
+                                />
+                            ))}
+                        </List>
+                    </Collapse>
+                    <Box sx={{ mt: 2 }}>
+                        <Button fullWidth variant="contained" onClick={generate_code} sx={{ p: 2 }}>Use Spec to generate code</Button>
+                        <Button fullWidth variant="outlined" onClick={preview} sx={{ p: 2, mt: 1 }}>Generate Preview</Button>
+                    </Box>
+                </Box>
 
-                <Typography
-                    variant="h6"
-                    onClick={handleToggle}
-                    sx={{ cursor: 'pointer', userSelect: 'none', mt: 3 }}
-                >
-                    {open ? <ExpandLess /> : <ExpandMore />} Page 1
-                </Typography>
-
-                <Collapse in={open} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding>
-                        {treeData.components?.map((comp, idx) => (
-                            <RecursiveComponent
-                                key={comp.id}
-                                component={comp}
-                                index={idx}
-                                level={1}
-                                moveComponent={moveComponent}
-                            />
-                        ))}
-                    </List>
-                </Collapse>
-
-                <Box sx={{ mt: 2 }}>
-                    <Button variant="contained" fullWidth onClick={generate_code} sx={{ p: 2 }}>
-                        Use Spec to generate code
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        fullWidth
-                        onClick={get_spec_console}
-                        sx={{ p: 2, mt: 1 }}
-                    >
-                        generate Preview
-                    </Button>
+                {/* 右侧详情展示 */}
+                <Box sx={{ width: '40%', p: 2 }}>
+                    <Typography sx={{ fontSize: '20px', mb: 1 }}>Selected Data</Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <Box component="pre" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 600, overflow: 'auto', bgcolor: '#f5f5f5', p: 2, borderRadius: 1 }}>
+                        {selectedNode ? JSON.stringify(selectedNode, null, 2) : 'Click a node to see details'}
+                    </Box>
                 </Box>
             </Box>
         </DndProvider>

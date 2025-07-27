@@ -28,7 +28,7 @@ const ImageUploadList = ({ getImageReference }) => {
             console.log("using this json as a payload", JSON.stringify(payload));
             const response = await getImageReference(payload);
             console.log("get response spec as:", response);
-            return response.data.spec;
+            return response.data.attribute;
         } catch (err) {
             console.log("error occur when referencing", err);
         }

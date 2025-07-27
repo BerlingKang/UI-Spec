@@ -10,8 +10,8 @@ export const imageToSpec = (body) => {
     return apiClient.post('api/image_to_spec', body);
 }
 
-export const adjustSpecLayout = (body) =>{
-    return apiClient.post('api/adjust_spec_layout', body);
+export const imageReference = (body) =>{
+    return apiClient.post('api/image_reference', body);
 }
 
 export const textToSpec = (body) =>{

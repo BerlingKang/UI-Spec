@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import {Box, Typography, Tab, Tabs} from "@mui/material";  // 推荐使用 MUI 布局组件，纯 CSS 也可
 import { testString2 as input_text, response as input_response, code_response as input_code, code_1, code_2, spec_1} from "./Parameters";
-import { combineSpec, generateCode as get_code_from_API, imageToSpec, editSpec, textToSpec, adjustSpecLayout } from "./APIsolver";
+import { combineSpec, generateCode as get_code_from_API, imageToSpec, editSpec, textToSpec, imageReference } from "./APIsolver";
 
 import CodeBar from "./CodePane";
 import UploadBar from "./UploadBar";
@@ -14,14 +14,25 @@ import TextToSpecBar from "./TextToSpecBar";
 const MainPane = () => {
     const [codeList, setCodeList] = useState([]);
     const [value, setValue] = useState(0);
-    const [generalSpecData, setGeneralSpecData] = useState(null);
+    const [generalSpecData, setGeneralSpecData] = useState(null); // 这个是整个项目中用于生成代码的spec树，对树的任何修改都应该更新在这里
     const [generatedImage, setGeneratedImage] = useState(null);
+
+
+    const [selectedComponent, setSelectedComponent] = useState(null); //用于传递在spectree组件中被选中的spec属性
+    const [selectedSpecData, setSelectedSpecData] = useState(null); //用于传递在upload组件中被选中的spec属性
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
     };
 
-
+    useEffect(() => {
+        /**
+         * 用于检测两个内容是否都选择全了的方法，会输出内容到控制台
+         * 仅用于debug，没有任何阻断功能
+         */
+        console.log('Selected Component:', selectedComponent);
+        console.log('Selected Spec:', selectedSpecData);
+    }, [selectedComponent, selectedSpecData]);
 
     /**
      * 通过Spec树生成代码的方法
@@ -69,10 +80,10 @@ const MainPane = () => {
      * @param body
      * @returns {Promise<void>}
      */
-    const adjust_spec_layout = async (body) => {
+    const image_reference = async (body) => {
         try {
             console.log("start posting");
-            const response = await adjustSpecLayout(body);
+            const response = await imageReference(body);
             console.log("Getting response:", response)
             return response;
         }catch (err){
@@ -121,7 +132,7 @@ const MainPane = () => {
             console.log("start posting");
             const response = await editSpec(body);
             console.log("Getting response:", response);
-            setGeneralSpecData(response.data.spec);
+            // TODO 这个地方应该重新考虑怎么把对应的修改后的spec传回到spectree中。吃个饭再想jpg
             return response;
         }catch (err){
             console.log(err)
@@ -170,7 +181,7 @@ const MainPane = () => {
                         minWidth: '180px'
                     }}
                 >
-                    <SpecTree data={generalSpecData} generateCode={generateCode} spec_console={spec_console}/>
+                    <SpecTree data={generalSpecData} generateCode={generateCode} spec_console={spec_console} setSelectedComponent={setSelectedComponent}/>
                 </Box>
 
 
@@ -231,7 +242,7 @@ const MainPane = () => {
                             <Box
                                 sx={{
                                     display: "flex",
-                                    width: '95%',
+                                    width: '75%',
                                     backgroundColor: "#f1f2f7",
                                     gap: 4,
                                     p: 2,
@@ -305,9 +316,25 @@ const MainPane = () => {
                                     <Box sx={{
                                         mt: "auto", maxWidth:'100%'
                                     }}>
-                                        <UploadBar image_to_spec={image_to_spec} edit_spec={edit_spec} data={generalSpecData}/>
+                                        <UploadBar image_reference={image_reference} edit_spec={edit_spec}
+                                                   data={generalSpecData} selectSpec={setSelectedSpecData}/>
                                     </Box>
                                 </Box>
+                            </Box>
+
+                            <Box sx={{
+                                display: "flex",
+                                width: '25%',
+                                backgroundColor: "#ffffff",
+                                gap: 4,
+                                p: 2,
+                                height: '100%',
+                                flexDirection: 'column'
+                            }}>
+                                <DetailPane selectedComponent={selectedComponent}
+                                            selectedSpecData={selectedSpecData}
+                                            edit_spec={edit_spec}
+                                />
                             </Box>
                         </Box>
 
