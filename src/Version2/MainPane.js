@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {Box, Typography, Tab, Tabs} from "@mui/material";  // 推荐使用 MUI 布局组件，纯 CSS 也可
 import { testString2 as input_text, response as input_response, code_response as input_code, code_1, code_2, spec_1} from "./Parameters";
-import { combineSpec, generateCode as get_code_from_API, imageToSpec, editSpec, textToSpec, imageReference } from "./APIsolver";
+import { combineSpec, generateCode as get_code_from_API, imageToSpec, editSpec, textToSpec, adjustSpecLayout } from "./APIsolver";
 
 import CodeBar from "./CodePane";
 import UploadBar from "./UploadBar";
@@ -9,13 +9,12 @@ import SpecTree from "./SpecTree";
 import DetailPane from "./DetailPane";
 import ReferencePane from "./ReferencePane";
 import TextToSpecBar from "./TextToSpecBar";
-import SpecTreeWithDnD from "./SpecTree";
 
 
 const MainPane = () => {
     const [codeList, setCodeList] = useState([]);
     const [value, setValue] = useState(0);
-    const [textToSpecData, setTextToSpecData] = useState(null);
+    const [generalSpecData, setGeneralSpecData] = useState(null);
     const [generatedImage, setGeneratedImage] = useState(null);
 
     const handleChange = (event, newValue) => {
@@ -70,11 +69,12 @@ const MainPane = () => {
      * @param body
      * @returns {Promise<void>}
      */
-    const image_reference = async (body) => {
+    const adjust_spec_layout = async (body) => {
         try {
             console.log("start posting");
-            const response = await imageReference(body);
+            const response = await adjustSpecLayout(body);
             console.log("Getting response:", response)
+            return response;
         }catch (err){
             console.log(err)
         }
@@ -92,7 +92,7 @@ const MainPane = () => {
             console.log("Getting response:", response);
             return response;
         }catch (err){
-            console.log(err);
+            console.log("error occur when using image_to_spec", err);
         }
     }
 
@@ -120,7 +120,9 @@ const MainPane = () => {
         try {
             console.log("start posting");
             const response = await editSpec(body);
-            console.log("Getting response:", response)
+            console.log("Getting response:", response);
+            setGeneralSpecData(response.data.spec);
+            return response;
         }catch (err){
             console.log(err)
         }
@@ -168,7 +170,7 @@ const MainPane = () => {
                         minWidth: '180px'
                     }}
                 >
-                    <SpecTree data={textToSpecData} generateCode={generateCode} spec_console={spec_console}/>
+                    <SpecTree data={generalSpecData} generateCode={generateCode} spec_console={spec_console}/>
                 </Box>
 
 
@@ -303,7 +305,7 @@ const MainPane = () => {
                                     <Box sx={{
                                         mt: "auto", maxWidth:'100%'
                                     }}>
-                                        <UploadBar image_to_spec={image_to_spec}/>
+                                        <UploadBar image_to_spec={image_to_spec} edit_spec={edit_spec} data={generalSpecData}/>
                                     </Box>
                                 </Box>
                             </Box>
@@ -349,13 +351,13 @@ const MainPane = () => {
 
                                     <Box
                                         component="img"
-                                        src={generatedImage || ""}
+                                        src={generatedImage || null}
                                         alt="Logo"
                                         sx={{ width: '100%', height: '55%' }}
                                     />
 
                                     <Box sx={{mt: "auto"}}>
-                                        <TextToSpecBar text_to_spec={text_to_spec} setTextToSpec={setTextToSpecData} />
+                                        <TextToSpecBar text_to_spec={text_to_spec} setTextToSpec={setGeneralSpecData} />
                                     </Box>
                                 </Box>
                             </Box>
@@ -368,10 +370,11 @@ const MainPane = () => {
                                     gap: 4,
                                     p: 2,
                                     height: '100%',
-                                    flexDirection: 'column'
+                                    flexDirection: 'column',
+                                    overflowY: 'auto'
                                 }}
                             >
-                                <ReferencePane data={spec_1}/>
+                                <ReferencePane getImageReference={image_to_spec}/>
                             </Box>
 
                         </Box>

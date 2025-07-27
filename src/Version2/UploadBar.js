@@ -9,7 +9,7 @@ import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import {input_string} from "../Version1/Parameters";
 
-const UploadBar = ({image_to_spec}) => {
+const UploadBar = ({image_to_spec, edit_spec, data}) => {
     const [images, setImages] = useState([]);
     const [value, setValue] = useState('');
     const defaultText = '-Input text and/or upload reference images to edit your SPEC\n-For partial reference, upload the relevant section instead of the full page';
@@ -61,6 +61,21 @@ const UploadBar = ({image_to_spec}) => {
         setImages((prev) => prev.filter((img) => img.id !== idToRemove));
 
     };
+
+    const confirmEditSpec = async (e) => {
+        const payload = {
+            save_name: "edit_spec_01",
+            text: value,
+            spec: data,
+        }
+        try{
+            console.log("spec before editing", data)
+            const response = await edit_spec(JSON.stringify(payload));
+            console.log("spec before editing", response.data.spec);
+        } catch (err) {
+            console.log("error when editing spec", err);
+        }
+    }
 
     return (
         <Box sx={{
@@ -189,8 +204,8 @@ const UploadBar = ({image_to_spec}) => {
                         onChange={handleImageUpload}
                     />
                 </IconButton>
-                <Button variant="contained" component="label">
-                    Generate
+                <Button variant="contained" component="label" onClick={confirmEditSpec}>
+                    Confirm Edit
                 </Button>
             </Box>
         </Box>
