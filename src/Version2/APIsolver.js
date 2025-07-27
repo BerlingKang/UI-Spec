@@ -23,9 +23,9 @@ export const editSpec = (body) => {
 }
 
 export const textToSpec = (body) =>{
-    return apiClient.post('api/text_to_spec');
+    return apiClient.post('api/text_to_spec', body);
 }
 
 export const imageReference = (body) =>{
-    return apiClient.post('api/image_reference');
+    return apiClient.post('api/image_reference', body);
 }

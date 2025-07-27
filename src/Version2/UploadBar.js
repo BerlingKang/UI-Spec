@@ -9,57 +9,57 @@ import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import {input_string} from "../Version1/Parameters";
 
-const UploadBar = (image_to_spec) => {
+const UploadBar = ({image_to_spec}) => {
     const [images, setImages] = useState([]);
     const [value, setValue] = useState('');
     const defaultText = '-Input text and/or upload reference images to edit your SPEC\n-For partial reference, upload the relevant section instead of the full page';
     const [specList, setSpecList] = useState([]);
     const displayValue = value === '' ? defaultText : value;
 
-    const handleImageUpload = (event) => {
+    const handleImageUpload = async (event) => {
         const files = Array.from(event.target.files);
-        const newImages = files.map((file) => ({
-            url: URL.createObjectURL(file),
-            id: Date.now() + Math.random(),
-        }));
-        setImages((prev) => [...prev, ...newImages]);
 
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-            const base64String = reader.result.split(",")[1];
+        for (const file of files) {
+            const reader = new FileReader();
 
-            const payload = {
-                image: base64String,
-                save_name: "my_image_spec",
-            };
             try {
-                const response = await image_to_spec(JSON.stringify(payload))
+                reader.onload = async () => {
+                    const base64String = reader.result.split(',')[1]; // 去掉开头的 data:image/...;base64,
 
-                const rawString = response.data.spec; // 是带有 ```json 的字符串
-                console.log(rawString);
-                //
-                // // 提取 ```json ... ``` 中的内容
-                // const regex = /```json\s*([\s\S]*?)\s*```/;
-                // const match = rawString.match(regex);
-                //
-                // if (!match || !match[1]) {
-                //     throw new Error("未匹配到 JSON 数据块");
-                // }
-                //
-                // const jsonString = match[1].trim(); // ⚠️ 去除开头结尾的空格与换行
-                //
-                // const dataObject = JSON.parse(rawString); // ✅ 成功解析
-                console.log("最终 JSON 对象:", rawString);
+                    const payload = {
+                        image: base64String,
+                        save_name: file.name,  // 或自定义一个唯一名字
+                        spec: "",              // 如有已有 spec 可传入；否则留空或删除该字段
+                    };
+                    const body = JSON.stringify(payload);
+                    // const response = await image_to_spec(body);
 
-                setSpecList((prev) => [...prev, rawString])
+                    const response = input_string;
+
+                    // const result = await response.json();
+
+                    const newImage = {
+                        url: URL.createObjectURL(file),
+                        id: Date.now() + Math.random(),
+                        // spec: result.spec,
+                    };
+                    setImages((prev) => [...prev, newImage]);
+                    setSpecList((prev) => [...prev, response])
+
+                };
             } catch (err) {
-                console.error(err)
+                alert("Handling pic fail")
+                console.log(err);
             }
-        };
+
+            reader.readAsDataURL(file);  // 将文件读成 base64
+        }
     };
+
 
     const handleRemoveImage = (idToRemove) => {
         setImages((prev) => prev.filter((img) => img.id !== idToRemove));
+
     };
 
     return (

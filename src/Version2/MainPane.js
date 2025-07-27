@@ -1,18 +1,22 @@
 import React, { useState } from "react";
 import {Box, Typography, Tab, Tabs} from "@mui/material";  // 推荐使用 MUI 布局组件，纯 CSS 也可
 import { testString2 as input_text, response as input_response, code_response as input_code, code_1, code_2, spec_1} from "./Parameters";
-import { combineSpec, generateCode, imageToSpec, editSpec, textToSpec, imageReference } from "./APIsolver";
+import { combineSpec, generateCode as get_code_from_API, imageToSpec, editSpec, textToSpec, imageReference } from "./APIsolver";
 
 import CodeBar from "./CodePane";
 import UploadBar from "./UploadBar";
 import SpecTree from "./SpecTree";
 import DetailPane from "./DetailPane";
 import ReferencePane from "./ReferencePane";
+import TextToSpecBar from "./TextToSpecBar";
+import SpecTreeWithDnD from "./SpecTree";
 
 
 const MainPane = () => {
     const [codeList, setCodeList] = useState([]);
     const [value, setValue] = useState(0);
+    const [textToSpecData, setTextToSpecData] = useState(null);
+    const [generatedImage, setGeneratedImage] = useState(null);
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
@@ -29,7 +33,7 @@ const MainPane = () => {
     const generateCode = async (body) => {
         try{
             console.log("start generating")
-            // const response = await generateCode(body);
+            // const response = await get_code_from_API(body);
             let response = null;
             if (indicater === 1) {
                 response = code_1;
@@ -40,6 +44,7 @@ const MainPane = () => {
             console.log("Using the generating API:", response);
             setCodeList((prev) => [...prev, response.data.code]);
             indicater = indicater + 1 // TODO: 这个地方是例子，记得改回去用API的
+            return response;
         } catch (err) {
             console.log(err)
         }
@@ -50,11 +55,11 @@ const MainPane = () => {
      * @param body
      * @returns {Promise<void>}
      */
-    const text_to_spec = async (body) =>{
+    const text_to_spec = async (body) => {
         try{
             console.log("start generating");
             const response = await textToSpec(body);
-            console.log("Getting response:", response);
+            return response;
         } catch (err){
             console.log(err);
         }
@@ -65,7 +70,7 @@ const MainPane = () => {
      * @param body
      * @returns {Promise<void>}
      */
-    const image_reference = async (body) =>{
+    const image_reference = async (body) => {
         try {
             console.log("start posting");
             const response = await imageReference(body);
@@ -80,7 +85,7 @@ const MainPane = () => {
      * @param body
      * @returns {Promise<void>}
      */
-    const image_to_spec = async (body) =>{
+    const image_to_spec = async (body) => {
         try {
             console.log("start posting");
             const response = await imageToSpec(body);
@@ -96,7 +101,7 @@ const MainPane = () => {
      * @param body
      * @returns {Promise<void>}
      */
-    const combine_spec = async (body) =>{
+    const combine_spec = async (body) => {
         try {
             console.log("start posting");
             const response = await combineSpec(body);
@@ -121,172 +126,16 @@ const MainPane = () => {
         }
     }
 
-    const EditUI = () =>{
-        return(
-            <Box
-                sx={{
-                    display: 'flex',
-                    flex: 1,
-                    backgroundColor: "#f1f2f7",
-                    height:'90%',
-                    width:'100%',
-                    flexDirection: 'row'
-                }}
-            >
-                <Box
-                    sx={{
-                        display: "flex",
-                        width: '95%',
-                        backgroundColor: "#f1f2f7",
-                        gap: 4,
-                        p: 2,
-                        height: '100%',
-                        flexDirection: 'column'
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flex: 1,
-                            flexDirection: 'column',
-                            height: '100%',
-                            width:'100%'
-                        }}
-                    >
-
-                        <Typography sx={{fontSize: '24px'}}>
-                            Edit UI
-                        </Typography>
-
-                        <Box sx={{
-                            width:'100%',
-                            display: 'flex',
-                            flex: 1,
-                            overflowY: 'auto',
-                            flexDirection: 'column',
-                        }}>
-                            {codeList.map((code, index) => (
-                                <Box
-                                    key={index}
-                                    sx={{
-                                        display: "flex",
-                                        flex: "1 1 0%",        // → 按 0 基准、允许增长也允许收缩
-                                        maxWidth: "100%",       // ← 绝对不超出父容器 75%
-                                        gap: 2,
-                                        mb: 4,
-                                        border: "1px solid #ccc",
-                                        p: 2,
-                                        borderRadius: 1,
-                                        backgroundColor: "#fafafa",
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            width: "100%",
-                                            maxWidth: "100%",
-                                            overflowY: "auto",
-                                            border: "1px solid #ddd",
-                                            p: 1,
-                                        }}
-                                    >
-                                        <h3>动态代码渲染 #{index + 1}</h3>
-                                        <Box
-                                            sx={{
-                                                flex: "1 1 auto",
-                                                minWidth: 0,             // 再次保证子元素可收缩
-                                                overflowX: "auto",       // 代码本身过长时水平滚动
-                                            }}
-                                        >
-                                            <CodeBar code={code} />
-                                        </Box>
-                                    </Box>
-                                </Box>
-                            ))}
-
-                        </Box>
-
-                        <Box sx={{
-                            mt: "auto", maxWidth:'100%'
-                        }}>
-                            <UploadBar image_to_spec={image_to_spec}/>
-                        </Box>
-                    </Box>
-                </Box>
-
-
-
-            </Box>
-        )
-    }
-
-    const GenerateUI = () =>{
-        return(
-            <Box
-                sx={{
-                    display: 'flex',
-                    flex: 1,
-                    backgroundColor: "#f1f2f7",
-                    height:'75%',
-                    width:'100%',
-                    flexDirection: 'row'
-                }}
-            >
-                <Box
-                    sx={{
-                        display: "flex",
-                        width: '75%',
-                        backgroundColor: "#f1f2f7",
-                        gap: 4,
-                        p: 2,
-                        height: '100%',
-                        flexDirection: 'column'
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flex: 1,
-                            flexDirection: 'column',
-                            height: '100%',
-                            width:'100%'
-                        }}
-                    >
-
-                        <Typography sx={{fontSize: '24px'}}>
-                            GenerateUI
-                        </Typography>
-
-                        <Box
-                            component="img"
-                            src="./example2.png"
-                            alt="Logo"
-                            sx={{ width: '100%', height: '55%' }}
-                        />
-
-                        <Box sx={{mt: "auto"}}>
-                            <UploadBar />
-                        </Box>
-                    </Box>
-                </Box>
-
-                <Box
-                    sx={{
-                        display: "flex",
-                        width: '25%',
-                        backgroundColor: "#ffffff",
-                        gap: 4,
-                        p: 2,
-                        height: '100%',
-                        flexDirection: 'column'
-                    }}
-                >
-                    <ReferencePane data={spec_1}/>
-                </Box>
-
-            </Box>
-        )
+    const spec_console = async (body) =>{
+        try {
+            // const response = await get_code_from_API(body);
+            const response = code_1;
+            console.log(response.data.render_image);
+            const base64 = response.data.render_image;
+            setGeneratedImage(`data:image/png;base64,${base64}`);
+        }catch (err){
+            console.log(err);
+        }
     }
 
     return (
@@ -319,7 +168,7 @@ const MainPane = () => {
                         minWidth: '180px'
                     }}
                 >
-                    <SpecTree data={spec_1} generateCode={generateCode}/>
+                    <SpecTree data={textToSpecData} generateCode={generateCode} spec_console={spec_console}/>
                 </Box>
 
 
@@ -364,8 +213,168 @@ const MainPane = () => {
                         maxWidth:'100%',
                         maxHeight:'90%',
                     }}>
-                        {value === 0 && <EditUI />}
-                        {value === 1 && <GenerateUI />}
+                        {/**
+                            第一个界面，用于提供更细节的界面编辑和修改的功能。
+                         */}
+                        <Box
+                            sx={{
+                                display: value === 0 ? 'flex' : 'none',
+                                flex: 1,
+                                backgroundColor: "#f1f2f7",
+                                height:'90%',
+                                width:'100%',
+                                flexDirection: 'row'
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    width: '95%',
+                                    backgroundColor: "#f1f2f7",
+                                    gap: 4,
+                                    p: 2,
+                                    height: '100%',
+                                    flexDirection: 'column'
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flex: 1,
+                                        flexDirection: 'column',
+                                        height: '100%',
+                                        width:'100%'
+                                    }}
+                                >
+
+                                    <Typography sx={{fontSize: '24px'}}>
+                                        Edit UI
+                                    </Typography>
+
+                                    <Box sx={{
+                                        width:'100%',
+                                        display: 'flex',
+                                        flex: 1,
+                                        overflowY: 'auto',
+                                        flexDirection: 'column',
+                                    }}>
+                                        {codeList.map((code, index) => (
+                                            <Box
+                                                key={index}
+                                                sx={{
+                                                    display: "flex",
+                                                    flex: "1 1 0%",        // → 按 0 基准、允许增长也允许收缩
+                                                    maxWidth: "100%",       // ← 绝对不超出父容器 75%
+                                                    gap: 2,
+                                                    mb: 4,
+                                                    border: "1px solid #ccc",
+                                                    p: 2,
+                                                    borderRadius: 1,
+                                                    backgroundColor: "#fafafa",
+                                                }}
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        width: "100%",
+                                                        maxWidth: "100%",
+                                                        overflowY: "auto",
+                                                        border: "1px solid #ddd",
+                                                        p: 1,
+                                                    }}
+                                                >
+                                                    <h3>动态代码渲染 #{index + 1}</h3>
+                                                    <Box
+                                                        sx={{
+                                                            flex: "1 1 auto",
+                                                            minWidth: 0,             // 再次保证子元素可收缩
+                                                            overflowX: "auto",       // 代码本身过长时水平滚动
+                                                        }}
+                                                    >
+                                                        <CodeBar code={code} />
+                                                    </Box>
+                                                </Box>
+                                            </Box>
+                                        ))}
+
+                                    </Box>
+
+                                    <Box sx={{
+                                        mt: "auto", maxWidth:'100%'
+                                    }}>
+                                        <UploadBar image_to_spec={image_to_spec}/>
+                                    </Box>
+                                </Box>
+                            </Box>
+                        </Box>
+
+                        {/**
+                            第二个界面，用于查看通过文本直接生成初始界面预览
+                         */}
+                        <Box
+                            sx={{
+                                display: value === 1 ? 'flex' : 'none',
+                                flex: 1,
+                                backgroundColor: "#f1f2f7",
+                                height:'75%',
+                                width:'100%',
+                                flexDirection: 'row'
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    width: '75%',
+                                    backgroundColor: "#f1f2f7",
+                                    gap: 4,
+                                    p: 2,
+                                    height: '100%',
+                                    flexDirection: 'column'
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flex: 1,
+                                        flexDirection: 'column',
+                                        height: '100%',
+                                        width:'100%'
+                                    }}
+                                >
+
+                                    <Typography sx={{fontSize: '24px'}}>
+                                        GenerateUI
+                                    </Typography>
+
+                                    <Box
+                                        component="img"
+                                        src={generatedImage || ""}
+                                        alt="Logo"
+                                        sx={{ width: '100%', height: '55%' }}
+                                    />
+
+                                    <Box sx={{mt: "auto"}}>
+                                        <TextToSpecBar text_to_spec={text_to_spec} setTextToSpec={setTextToSpecData} />
+                                    </Box>
+                                </Box>
+                            </Box>
+
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    width: '25%',
+                                    backgroundColor: "#ffffff",
+                                    gap: 4,
+                                    p: 2,
+                                    height: '100%',
+                                    flexDirection: 'column'
+                                }}
+                            >
+                                <ReferencePane data={spec_1}/>
+                            </Box>
+
+                        </Box>
                     </Box>
 
                 </Box>
