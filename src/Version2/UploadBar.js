@@ -22,8 +22,8 @@ const UploadBar = ({ image_reference, edit_spec, data, selectSpec }) => {
         };
         try {
             console.log("using this json as a payload", JSON.stringify(payload));
-            // const response = await image_reference(payload);
-            let response = reference_10
+            const response = await image_reference(payload);
+            // let response = reference_10
             console.log("get response spec as:", response);
             return response.data.data.attribute;
         } catch (err) {

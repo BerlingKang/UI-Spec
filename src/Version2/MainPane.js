@@ -44,8 +44,8 @@ const MainPane = () => {
     const generateCode = async (body) => {
         try{
             console.log("start generating")
-            // const response = await get_code_from_API(body);
-            let response = generate_code_example;
+            const response = await get_code_from_API(body);
+            // let response = generate_code_example;
             // if (indicater === 1) {
             //     response = code_1;
             // }
