@@ -7,13 +7,11 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
-import { reference_example } from './Parameters'
+import { reference_10 } from './Parameters'
 
 const UploadBar = ({ image_reference, edit_spec, data, selectSpec }) => {
     const [images, setImages] = useState([]);
     const [value, setValue] = useState('');
-    const defaultText = '-Input text and/or upload reference images to edit your SPEC\n-For partial reference, upload the relevant section instead of the full page';
-    const displayValue = value === '' ? defaultText : value;
     const [imageCount, setImageCount] = useState(0);
 
     const get_reference = async (pureBase64) => {
@@ -25,9 +23,9 @@ const UploadBar = ({ image_reference, edit_spec, data, selectSpec }) => {
         try {
             console.log("using this json as a payload", JSON.stringify(payload));
             // const response = await image_reference(payload);
-            let response = reference_example
+            let response = reference_10
             console.log("get response spec as:", response);
-            return response.data.attributes;
+            return response.data.data.attribute;
         } catch (err) {
             console.log("error occur when referencing", err);
         }
@@ -42,6 +40,7 @@ const UploadBar = ({ image_reference, edit_spec, data, selectSpec }) => {
                 const extension = file.name.split('.').pop();
                 const newName = `image_${imageCount + index + 1}.${extension}`;
                 const spec = await get_reference(reader.result);   // ✅ 正确传参
+                console.log(spec);
 
                 resolve({
                     base64: reader.result,
@@ -170,7 +169,7 @@ const UploadBar = ({ image_reference, edit_spec, data, selectSpec }) => {
                         overflow: "auto",
                     },
                 }}
-                value={displayValue}
+                value={null}
                 onChange={(e) => setValue(e.target.value)}
                 onFocus={() => {
                     if (value === '') setValue('');

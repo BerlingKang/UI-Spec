@@ -4,7 +4,7 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 
 import MainPane from './Version2/MainPane'
-import CodeBar from "./TechnicalTest/Interact";
+import App from "./TechnicalTest/UnknowCode";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

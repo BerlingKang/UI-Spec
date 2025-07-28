@@ -95,7 +95,7 @@ const RecursiveComponent = ({ component, index, level = 1, moveComponent, select
     );
 };
 
-const SpecTree = ({ data = {}, generateCode, spec_console, setSelectedComponent }) => {
+const SpecTree = ({ data = {}, generateCode, spec_console, setSelectedComponent, updateSpecData }) => {
     const [selectedId, setSelectedId] = useState(null);
     const [selectedNode, setSelectedNode] = useState(null);
     const [treeData, setTreeData] = useState({ components: [], raw: null });
@@ -120,6 +120,48 @@ const SpecTree = ({ data = {}, generateCode, spec_console, setSelectedComponent 
         const transformed = transformData(data);
         setTreeData(assignIds(transformed));
     }, [data]);
+
+    // 在 SpecTree 组件内部，紧跟现有的 useEffect([data]) 之后
+    useEffect(() => {
+        if (!updateSpecData || !selectedId) return;
+
+        setTreeData(oldTree => {
+            // 1. 深拷贝
+            const newTree = JSON.parse(JSON.stringify(oldTree));
+
+            // 2. 如果选中的是根节点
+            if (selectedId === 'root') {
+                // 把整个 raw 换掉，然后重新生成 components
+                const transformed = transformData(updateSpecData);
+                const withIds = assignIds(transformed);
+                return withIds;
+            }
+
+            // 3. 否则递归查找并更新
+            const recursiveUpdate = nodes => {
+                return nodes.map(node => {
+                    if (node.id === selectedId) {
+                        // 更新 raw
+                        node.raw = updateSpecData;
+                        // 同步 text.main，比如根节点是“区域划分”节点
+                        const mainText =
+                            updateSpecData['承担的功能'] ||
+                            updateSpecData['区域名称'] ||
+                            node.text.main;
+                        node.text = { main: mainText };
+                    }
+                    if (node.children) {
+                        node.children = recursiveUpdate(node.children);
+                    }
+                    return node;
+                });
+            };
+
+            newTree.components = recursiveUpdate(newTree.components);
+            return newTree;
+        });
+    }, [updateSpecData]);
+
 
     // 点击节点
     const handleSelect = component => {
@@ -157,6 +199,7 @@ const SpecTree = ({ data = {}, generateCode, spec_console, setSelectedComponent 
     const generate_code = async () => {
         try {
             const payload = { save_name: 'generate_code_1', spec: treeData };
+            console.log(payload);
             const res = await generateCode(JSON.stringify(payload));
             console.log(res.data);
         } catch (e) {
@@ -186,9 +229,9 @@ const SpecTree = ({ data = {}, generateCode, spec_console, setSelectedComponent 
 
     return (
         <DndProvider backend={HTML5Backend}>
-            <Box sx={{ display: 'flex', width: '100%', mt: 1 }}>
+            <Box sx={{ display: 'flex', width: '100%', mt: 1, height:'100%'}}>
                 {/* 左侧树状列表 */}
-                <Box sx={{ width: '60%', borderRight: '1px solid #ddd', p: 1 }}>
+                <Box sx={{ width: '60%', borderRight: '1px solid #ddd', p: 1, overflowY:'auto' }}>
                     <Typography sx={{ fontSize: '24px' }}>Layers</Typography>
                     <Box sx={{ height: '5px', backgroundColor: '#c2c2c5', my: 2 }} />
                     <RootHeader />

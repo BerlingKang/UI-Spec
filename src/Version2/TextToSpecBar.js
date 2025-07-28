@@ -19,8 +19,8 @@ const TextToSpecBar = ({text_to_spec, setTextToSpec}) => {
         };
 
         try {
-            let response = text_to_spec(payload);
-            console.log("getting responsing spec:",response)
+            // let response = text_to_spec(payload);
+            // console.log("getting responsing spec:",response)
             // setTextToSpec(response.data.spec)
             setTextToSpec(root_spec)
         } catch (err) {

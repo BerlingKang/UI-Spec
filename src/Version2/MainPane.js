@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {Box, Typography, Tab, Tabs} from "@mui/material";  // 推荐使用 MUI 布局组件，纯 CSS 也可
-import { testString2 as input_text, response as input_response, code_response as input_code, code_1, code_2, spec_1} from "./Parameters";
+import { testString2 as input_text, response as input_response, code_response as input_code, code_1, code_2, spec_1, generate_code_example} from "./Parameters";
 import { combineSpec, generateCode as get_code_from_API, imageToSpec, editSpec, textToSpec, imageReference } from "./APIsolver";
 
 import CodeBar from "./CodePane";
@@ -20,6 +20,7 @@ const MainPane = () => {
 
     const [selectedComponent, setSelectedComponent] = useState(null); //用于传递在spectree组件中被选中的spec属性
     const [selectedSpecData, setSelectedSpecData] = useState(null); //用于传递在upload组件中被选中的spec属性
+    const [updateSpecData, setUpdateSpecData] = useState(null);
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
@@ -44,15 +45,15 @@ const MainPane = () => {
         try{
             console.log("start generating")
             // const response = await get_code_from_API(body);
-            let response = null;
-            if (indicater === 1) {
-                response = code_1;
-            }
-            else if (indicater === 2) {
-                response = code_2
-            }
+            let response = generate_code_example;
+            // if (indicater === 1) {
+            //     response = code_1;
+            // }
+            // else if (indicater === 2) {
+            //     response = code_2
+            // }
             console.log("Using the generating API:", response);
-            setCodeList((prev) => [...prev, response.data.code]);
+            setCodeList((prev) => [...prev, response.data.data.code]);
             indicater = indicater + 1 // TODO: 这个地方是例子，记得改回去用API的
             return response;
         } catch (err) {
@@ -131,8 +132,8 @@ const MainPane = () => {
         try {
             console.log("start posting");
             const response = await editSpec(body);
-            console.log("Getting response:", response);
-            // TODO 这个地方应该重新考虑怎么把对应的修改后的spec传回到spectree中。吃个饭再想jpg
+            console.log("Getting response:", response.data.data.spec);
+            setUpdateSpecData(response.data.data.spec);
             return response;
         }catch (err){
             console.log(err)
@@ -181,7 +182,9 @@ const MainPane = () => {
                         minWidth: '180px'
                     }}
                 >
-                    <SpecTree data={generalSpecData} generateCode={generateCode} spec_console={spec_console} setSelectedComponent={setSelectedComponent}/>
+                    <SpecTree data={generalSpecData} generateCode={generateCode} spec_console={spec_console} setSelectedComponent={setSelectedComponent}
+                              updateSpecData={updateSpecData}
+                    />
                 </Box>
 
 
